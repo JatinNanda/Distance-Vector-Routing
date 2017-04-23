@@ -1,18 +1,3 @@
-def min_advert(router, advert, temp_tables):
-    cost_list = []
-    table_of_router = temp_tables[router.name]
-    for adj in router.adjacencies:
-        adj_table = temp_tables[adj[0].name]
-        cost = table_of_router[adj[0].name].cost + adj_table[advert].cost
-        total_hops = 1 + adj_table[advert].total_hops
-        if cost is not -1:
-            cost_list.append(Advertisement(adj[0].name, cost, total_hops))
-        if cost_list:
-            return min(cost_list, key=lambda c : c.cost)
-        else:
-            return None
-
-
 def input_to_routers(filename):
     num_routers = None
     routers = []
@@ -128,6 +113,16 @@ class Change():
                 router_b.table[router_a.name].next_hop = -1
                 router_b.table[router_a.name].cost = -1
                 router_b.table[router_a.name].total_hops = -1
+            for advert in router_a.table:
+                if router_a.table[advert].next_hop == router_b.name:
+                    router_a.table[advert].next_hop = -1
+                    router_a.table[advert].cost = -1
+                    router_a.table[advert].total_hops = -1
+            for advert in router_b.table:
+                if router_b.table[advert].next_hop == router_a.name:
+                    router_b.table[advert].next_hop = -1
+                    router_b.table[advert].cost = -1
+                    router_b.table[advert].total_hops = -1
             return
 
         #new edge

@@ -33,7 +33,7 @@ temp_tables = None
 
 
 
-while (not converged or len(changes) > 0):
+while (iter_num < 110 or not converged or len(changes) > 0):
     print("ITERATION " + str(iter_num))
     #time.sleep(1) #delay for readability
 
@@ -59,6 +59,8 @@ while (not converged or len(changes) > 0):
         changes[0].apply_change(routers)
         del changes[0]
         converged = False
+        print_iter_table(routers)
+        time.sleep(1)
 
     #temporary storage for the iteration
     temp_tables = {r.name: copy.copy(r.table) for r in routers}
@@ -69,7 +71,7 @@ while (not converged or len(changes) > 0):
         for advert in table_of_router:
             if table_of_router[advert].next_hop != -1:
                 table_of_adj = temp_tables[table_of_router[advert].next_hop]
-                if table_of_router[advert].cost != -1 and table_of_adj[advert].cost != -1 and table_of_adj[advert].cost != 0:
+                if table_of_router[advert].cost != -1 and table_of_adj[advert].cost != -1 and table_of_router[advert].cost != 0:
                     new_cost = table_of_router[advert].cost + table_of_adj[advert].cost
                     router.table[advert].total_hops = 1 + table_of_adj[advert].total_hops
                     router.table[advert].cost = new_cost
