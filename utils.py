@@ -41,6 +41,17 @@ def input_to_changes(filename, num_routers):
             changes.append(Change(time_step, router_a, router_b, cost))
     return changes
 
+def print_iter_table(routers):
+    table = ''
+    for r in routers:
+        table += str(r.name) + ' | '
+        for advert in r.table:
+            table += str(r.table[advert]) + ' |'
+        table += '\n'
+    print(table)
+
+
+
 class Router():
     def __init__(self, name, total_routers):
         self.name = name
@@ -51,7 +62,9 @@ class Router():
         table = {}
         for i in range(total_routers):
             if i+1 is not int(self.name):
-                table[str(i+1)] = Advertisement(None, float('inf'))
+                table[str(i+1)] = Advertisement(0, -1, -1)
+            else:
+                table[str(i+1)] = Advertisement(self.name, 0, 0)
         return table
 
     def print_table(self):
@@ -92,7 +105,7 @@ class Change():
             del router_a.adjacencies[router_a.adjacencies.index((router_b, b_cost))]
             a_cost = dict(router_b.adjacencies)[router_a]
             del router_b.adjacencies[router_b.adjacencies.index((router_a, a_cost))]
-            self.cost = float('inf')
+            self.cost = -1
         #new edge
         elif self.router_b not in dict(router_a.adjacencies):
             print("ADDING NEW EDGE")
@@ -100,8 +113,10 @@ class Change():
             router_b.adjacencies.append((router_a, self.cost))
         #existing edge
         else:
-            del router_a.adjacencies[router_a.adjacencies.index(router_b, self.cost)]
-            del router_b.adjacencies[router_b.adjacencies.index(router_a, self.cost)]
+            a_cost = dict(router_b.adjacencies)[router_a]
+            b_cost = dict(router_a.adjacencies)[router_b]
+            del router_a.adjacencies[router_a.adjacencies.index((router_b, b_cost))]
+            del router_b.adjacencies[router_b.adjacencies.index((router_a, a_cost))]
             router_a.adjacencies.append((router_b, self.cost))
             router_b.adjacencies.append((router_a, self.cost))
 
@@ -109,18 +124,21 @@ class Change():
         if router_a.table[router_b.name].cost > self.cost:
             router_a.table[router_b.name].cost = self.cost
             router_a.table[router_b.name].next_hop = self.router_b
+            router_a.table[router_b.name].total_hops = 1
 
         if router_b.table[router_a.name].cost > self.cost:
             router_b.table[router_a.name].cost = self.cost
-            router_b.table[router_a.name].cost = self.router_a
+            router_b.table[router_a.name].next_hop = self.router_a
+            router_b.table[router_a.name].total_hops = 1
 
     def __repr__(self):
         return "TIME: " + str(self.time_step) + " EDGE:" + str(self.router_a) + "->" + str(self.router_b) + " COST: " + str(self.cost)
 
 class Advertisement():
-    def __init__(self, next_hop, cost):
+    def __init__(self, next_hop, cost, total_hops):
         self.next_hop = next_hop
-        self.cost = cost
+        self.cost = int(cost)
+        self.total_hops = total_hops
 
     def __repr__(self):
-        return str(self.next_hop) + ": " + str(self.cost)
+        return str(self.next_hop) + "," + str(self.total_hops) + ": " + str(self.cost)
