@@ -55,7 +55,7 @@ while (not converged or len(changes) > 0):
     #apply changes when applicable
     while len(changes) > 0 and iter_num == int(changes[0].time_step):
         print("Applying change: " + str(changes[0]))
-        changes[0].apply_change(routers)
+        changes[0].apply_poison_change(routers)
         last_event = changes[0].time_step
         del changes[0]
         converged = False
@@ -113,7 +113,7 @@ while (not converged or len(changes) > 0):
 
     iter_num += 1
 if convergence_delay is None:
-    convergence_delay = iter_num - last_event
+    convergence_delay = iter_num - last_event - 1
 print("Convergence Delay: " + str(convergence_delay))
 
 #append final output
@@ -176,6 +176,10 @@ while (not converged or len(changes) > 0):
                     new_cost = table_of_router[advert].cost + table_of_adj[advert].cost
                     router.table[advert].total_hops = 1 + table_of_adj[advert].total_hops
                     router.table[advert].cost = new_cost
+                elif table_of_adj[advert].cost == -1:
+                    router.table[advert].total_hops = -1
+                    router.table[advert].cost = -1
+                    router.table[advert].next_hop = -1
 
     #temporary storage for the iteration
     temp_tables = {r.name: copy.deepcopy(r.table) for r in routers}
@@ -217,7 +221,7 @@ while (not converged or len(changes) > 0):
 
     iter_num += 1
 if convergence_delay is None:
-    convergence_delay = iter_num - last_event
+    convergence_delay = iter_num - last_event - 1
 print("Convergence Delay: " + str(convergence_delay))
 
 #append final output
@@ -280,6 +284,10 @@ while (not converged or len(changes) > 0):
                     new_cost = table_of_router[advert].cost + table_of_adj[advert].cost
                     router.table[advert].total_hops = 1 + table_of_adj[advert].total_hops
                     router.table[advert].cost = new_cost
+                elif table_of_adj[advert].cost == -1:
+                    router.table[advert].total_hops = -1
+                    router.table[advert].cost = -1
+                    router.table[advert].next_hop = -1
 
     #temporary storage for the iteration
     temp_tables = {r.name: copy.deepcopy(r.table) for r in routers}
@@ -321,7 +329,7 @@ while (not converged or len(changes) > 0):
 
     iter_num += 1
 if convergence_delay is None:
-    convergence_delay = iter_num - last_event
+    convergence_delay = iter_num - last_event - 1
 print("Convergence Delay: " + str(convergence_delay))
 
 #append final output

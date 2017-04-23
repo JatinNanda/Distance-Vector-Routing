@@ -93,6 +93,74 @@ class Change():
         self.router_b = router_b
         self.cost = int(cost)
 
+    def apply_poison_change(self, routers):
+        #update routers and adjacencies
+        router_a = [r for r in routers if r == self.router_a][0]
+        router_b = [r for r in routers if r == self.router_b][0]
+
+
+        #deleting edge, get rid of adjacencies
+        #-1 is sentinel value for infinity here
+        if self.cost == -1:
+            print("DELETING EDGE")
+            b_cost = dict(router_a.adjacencies)[router_b]
+            del router_a.adjacencies[router_a.adjacencies.index((router_b, b_cost))]
+            a_cost = dict(router_b.adjacencies)[router_a]
+            del router_b.adjacencies[router_b.adjacencies.index((router_a, a_cost))]
+            if router_a.table[router_b.name].next_hop == router_b.name:
+                router_a.table[router_b.name].next_hop = -1
+                router_a.table[router_b.name].cost = -1
+                router_a.table[router_b.name].total_hops = -1
+            if router_b.table[router_a.name].next_hop == router_a.name:
+                router_b.table[router_a.name].next_hop = -1
+                router_b.table[router_a.name].cost = -1
+                router_b.table[router_a.name].total_hops = -1
+            for advert in router_a.table:
+                if router_a.table[advert].next_hop == router_b.name:
+                    router_a.table[advert].next_hop = -1
+                    router_a.table[advert].cost = -1
+                    router_a.table[advert].total_hops = -1
+            for advert in router_b.table:
+                if router_b.table[advert].next_hop == router_a.name:
+                    router_b.table[advert].next_hop = -1
+                    router_b.table[advert].cost = -1
+                    router_b.table[advert].total_hops = -1
+            return
+
+        #new edge
+        elif self.router_b not in dict(router_a.adjacencies):
+            print("ADDING NEW EDGE")
+            router_a.adjacencies.append((router_b, self.cost))
+            router_b.adjacencies.append((router_a, self.cost))
+        #existing edge
+        else:
+            a_cost = dict(router_b.adjacencies)[router_a]
+            b_cost = dict(router_a.adjacencies)[router_b]
+            del router_a.adjacencies[router_a.adjacencies.index((router_b, b_cost))]
+            del router_b.adjacencies[router_b.adjacencies.index((router_a, a_cost))]
+            router_a.adjacencies.append((router_b, self.cost))
+            router_b.adjacencies.append((router_a, self.cost))
+            for advert in router_a.table:
+                if router_a.table[advert].next_hop == router_b.name:
+                    new_cost = self.cost + router_b.table[advert].cost
+                    router_a.table[advert].cost = new_cost
+            for advert in router_b.table:
+                if router_b.table[advert].next_hop == router_a.name:
+                    new_cost = self.cost + router_a.table[advert].cost
+                    router_b.table[advert].cost = new_cost
+
+        #update in the routing tables
+        if router_a.table[router_b.name].cost > self.cost:
+            router_a.table[router_b.name].cost = self.cost
+            router_a.table[router_b.name].next_hop = self.router_b.name
+            router_a.table[router_b.name].total_hops = 1
+
+        if router_b.table[router_a.name].cost > self.cost:
+            router_b.table[router_a.name].cost = self.cost
+            router_b.table[router_a.name].next_hop = self.router_a.name
+            router_b.table[router_a.name].total_hops = 1
+
+
     def apply_change(self, routers):
         #update routers and adjacencies
         router_a = [r for r in routers if r == self.router_a][0]
@@ -168,4 +236,4 @@ class Advertisement():
         self.total_hops = total_hops
 
     def __repr__(self):
-        return str(self.next_hop) + "," + str(self.total_hops) + ": " + str(self.cost)
+        return str(self.next_hop) + "," + str(self.total_hops)
