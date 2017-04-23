@@ -48,7 +48,7 @@ def print_iter_table(routers):
         for advert in r.table:
             table += str(r.table[advert]) + ' | '
         table += '\n'
-    print(table)
+    return table
 
 
 
