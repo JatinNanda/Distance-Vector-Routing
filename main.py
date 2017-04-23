@@ -113,7 +113,7 @@ print("Convergence Delay: " + convergence_delay)
 
 #append final output
 if mode == '0':
-    basic.write('Round Number: ' + str(iter_num) + '\n')
+    basic.write('Round Number: ' + str(iter_num - 1) + '\n')
     basic.write(print_iter_table(routers) + '\n')
 basic.write('Convergence Delay: ' + str(convergence_delay))
 
@@ -160,7 +160,7 @@ while (not converged or len(changes) > 0):
         time.sleep(1)
 
     #temporary storage for the iteration
-    temp_tables = {r.name: copy.copy(r.table) for r in routers}
+    temp_tables = {r.name: copy.deepcopy(r.table) for r in routers}
 
     #update tables
     for router in routers:
@@ -172,6 +172,10 @@ while (not converged or len(changes) > 0):
                     new_cost = table_of_router[advert].cost + table_of_adj[advert].cost
                     router.table[advert].total_hops = 1 + table_of_adj[advert].total_hops
                     router.table[advert].cost = new_cost
+                #elif table_of_adj[advert].cost == -1:
+                #    router.table[advert].total_hops = -1
+                #    router.table[advert].cost = -1
+                #    router.table[advert].next_hop = -1
 
     for router in routers:
         table_of_router = temp_tables[router.name]
@@ -208,7 +212,7 @@ while (not converged or len(changes) > 0):
 
     iter_num += 1
 if mode == '0':
-    split_horizon.write('Round Number: ' + str(iter_num) + '\n')
+    split_horizon.write('Round Number: ' + str(iter_num - 1) + '\n')
     split_horizon.write(print_iter_table(routers) + '\n')
 if convergence_delay is None:
     convergence_delay = iter_num - last_event
