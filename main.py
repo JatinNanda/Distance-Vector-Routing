@@ -69,8 +69,9 @@ while (not converged or len(changes) > 0):
         for advert in table_of_router:
             if table_of_router[advert].next_hop != -1:
                 table_of_adj = temp_tables[table_of_router[advert].next_hop]
-                if table_of_router[advert].cost != -1 and table_of_adj[advert].cost != -1:
+                if table_of_router[advert].cost != -1 and table_of_adj[advert].cost != -1 and table_of_adj[advert].cost != 0:
                     new_cost = table_of_router[advert].cost + table_of_adj[advert].cost
+                    router.table[advert].total_hops = 1 + table_of_adj[advert].total_hops
                     router.table[advert].cost = new_cost
 
     #temporary storage for the iteration
