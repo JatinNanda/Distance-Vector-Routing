@@ -63,32 +63,26 @@ while (not converged or len(changes) > 0):
     #temporary storage for the iteration
     temp_tables = {r.name: copy.copy(r.table) for r in routers}
 
-    #check tables with adjacencies
+    #update tables
     for router in routers:
+        table_of_router = temp_tables[router.name]
         for adj in router.adjacencies:
-            table_to_use = temp_tables[adj[0].name]
-            if table_to_use[router.name].cost == -1 or table_to_use[router.name].cost > adj[1]:
-                router.table[adj[0].name] = Advertisement(adj[0].name, adj[1], 1)
-    print_iter_table(routers)
-
-    #temp copy of every table in routers
-    if iter_num is not -1:
-        for router in routers:
-            for adj in router.adjacencies:
-                table_to_use = temp_tables[adj[0].name]
-                for advert in table_to_use:
-                    if table_to_use[advert].cost == -1:
-                        new_cost = router.table[adj[0].name].cost
-                    else:
-                        new_cost = router.table[adj[0].name].cost + table_to_use[advert].cost
+            table_of_adj = temp_tables[adj[0].name]
+            #get advertisements from adjacencies
+            for advert in table_of_adj:
+                if table_of_adj[advert].cost != -1:
+                    new_cost = router.table[adj[0].name].cost + table_of_adj[advert].cost
                     if router.table[advert].cost == -1 or new_cost < router.table[advert].cost:
                         router.table[advert].cost = new_cost
                         router.table[advert].next_hop = adj[0].name
                         if router.table[advert].total_hops == -1:
                             router.table[advert].total_hops = 1
                         else:
-                            router.table[advert].total_hops = 1 + table_to_use[advert].total_hops
+                            router.table[advert].total_hops = 1 + table_of_adj[advert].total_hops
 
+            #see if direct adjacency is better (initial setup or based on a change)
+            if table_of_router[adj[0].name].cost == -1 or table_of_router[adj[0].name].cost > adj[1]:
+                router.table[adj[0].name] = Advertisement(adj[0].name, adj[1], 1)
     print_iter_table(routers)
 
 
