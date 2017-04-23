@@ -35,7 +35,7 @@ temp_tables = None
 
 while (not converged or len(changes) > 0):
     print("ITERATION " + str(iter_num))
-    time.sleep(1) #delay for readability
+    #time.sleep(1) #delay for readability
 
     #First check for count to infinity
     for r in routers:
@@ -66,11 +66,23 @@ while (not converged or len(changes) > 0):
     #update tables
     for router in routers:
         table_of_router = temp_tables[router.name]
+        for advert in table_of_router:
+            if table_of_router[advert].next_hop != -1:
+                table_of_adj = temp_tables[table_of_router[advert].next_hop]
+                if table_of_router[advert].cost != -1 and table_of_adj[advert].cost != -1:
+                    new_cost = table_of_router[advert].cost + table_of_adj[advert].cost
+                    router.table[advert].cost = new_cost
+
+    #temporary storage for the iteration
+    temp_tables = {r.name: copy.copy(r.table) for r in routers}
+
+    for router in routers:
+        table_of_router = temp_tables[router.name]
         for adj in router.adjacencies:
             table_of_adj = temp_tables[adj[0].name]
             #get advertisements from adjacencies
             for advert in table_of_adj:
-                if table_of_adj[advert].cost != -1:
+                if table_of_router[adj[0].name].cost != -1 and table_of_adj[advert].cost != -1:
                     new_cost = table_of_router[adj[0].name].cost + table_of_adj[advert].cost
                     if table_of_router[advert].cost == -1 or new_cost < table_of_router[advert].cost:
                         router.table[advert].cost = new_cost
