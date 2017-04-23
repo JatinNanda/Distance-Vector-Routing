@@ -15,7 +15,7 @@ mode = sys.argv[3]
 
 #output files
 basic = open('basic.txt', 'w')
-split_horizon = open('split.txt', 'w')
+split = open('split.txt', 'w')
 poison_reverse = open('poison.txt', 'w')
 
 
@@ -37,7 +37,7 @@ convergence_delay = None
 
 while (not converged or len(changes) > 0):
     print("ITERATION " + str(iter_num))
-    time.sleep(1) #delay for readability
+    #time.sleep(1) #delay for readability
 
     #First check for count to infinity
     for r in routers:
@@ -53,17 +53,12 @@ while (not converged or len(changes) > 0):
         break
 
     #apply changes when applicable
-    print("BEFORE:")
-    print(print_iter_table(routers))
     while len(changes) > 0 and iter_num == int(changes[0].time_step):
         print("Applying change: " + str(changes[0]))
         changes[0].apply_change(routers)
         last_event = changes[0].time_step
         del changes[0]
         converged = False
-        print("AFTER:")
-        print(print_iter_table(routers))
-        #print(time.sleep(5))
 
     #temporary storage for the iteration
     temp_tables = {r.name: copy.deepcopy(r.table) for r in routers}
@@ -96,8 +91,11 @@ while (not converged or len(changes) > 0):
                         router.table[advert].total_hops = 1 + table_of_adj[advert].total_hops
 
             #see if direct adjacency is better (initial setup or based on a change)
-            if table_of_router[adj[0].name].cost == -1 or table_of_router[adj[0].name].cost > adj[1]:
+            if router.table[adj[0].name].cost == -1 or router.table[adj[0].name].cost > adj[1]:
                 router.table[adj[0].name] = Advertisement(adj[0].name, adj[1], 1)
+                for r in routers:
+                    if r.name == adj[0].name:
+                        r.table[router.name] = Advertisement(router.name, adj[1], 1)
 
     table = print_iter_table(routers)
     if table == last_table:
@@ -117,7 +115,6 @@ while (not converged or len(changes) > 0):
 if convergence_delay is None:
     convergence_delay = iter_num - last_event
 print("Convergence Delay: " + str(convergence_delay))
-sys.exit(0)
 
 #append final output
 if mode == '0':
@@ -165,7 +162,6 @@ while (not converged or len(changes) > 0):
         last_event = changes[0].time_step
         del changes[0]
         converged = False
-        time.sleep(1)
 
     #temporary storage for the iteration
     temp_tables = {r.name: copy.deepcopy(r.table) for r in routers}
@@ -180,17 +176,15 @@ while (not converged or len(changes) > 0):
                     new_cost = table_of_router[advert].cost + table_of_adj[advert].cost
                     router.table[advert].total_hops = 1 + table_of_adj[advert].total_hops
                     router.table[advert].cost = new_cost
-                elif table_of_adj[advert].cost == -1:
-                    router.table[advert].total_hops = -1
-                    router.table[advert].cost = -1
-                    router.table[advert].next_hop = -1
+
+    #temporary storage for the iteration
+    temp_tables = {r.name: copy.deepcopy(r.table) for r in routers}
 
     for router in routers:
         table_of_router = temp_tables[router.name]
         for adj in router.adjacencies:
             table_of_adj = temp_tables[adj[0].name]
             #get advertisements from adjacencies
-
             for advert in table_of_adj:
                 if table_of_router[adj[0].name].cost != -1 and table_of_adj[advert].cost != -1:
                     if table_of_adj[advert].next_hop != router.name:
@@ -201,8 +195,11 @@ while (not converged or len(changes) > 0):
                             router.table[advert].total_hops = 1 + table_of_adj[advert].total_hops
 
             #see if direct adjacency is better (initial setup or based on a change)
-            if table_of_router[adj[0].name].cost == -1 or table_of_router[adj[0].name].cost > adj[1]:
+            if router.table[adj[0].name].cost == -1 or router.table[adj[0].name].cost > adj[1]:
                 router.table[adj[0].name] = Advertisement(adj[0].name, adj[1], 1)
+                for r in routers:
+                    if r.name == adj[0].name:
+                        r.table[router.name] = Advertisement(router.name, adj[1], 1)
 
     table = print_iter_table(routers)
     if table == last_table:
@@ -214,20 +211,20 @@ while (not converged or len(changes) > 0):
 
     if (mode == '1'):
         #append output per iteration
-        split_horizon.write('Round Number: ' + str(iter_num) + '\n')
-        split_horizon.write(print_iter_table(routers) + '\n')
+        split.write('Round Number: ' + str(iter_num) + '\n')
+        split.write(print_iter_table(routers) + '\n')
         pass
 
     iter_num += 1
-if mode == '0':
-    split_horizon.write('Round Number: ' + str(iter_num - 1) + '\n')
-    split_horizon.write(print_iter_table(routers) + '\n')
 if convergence_delay is None:
     convergence_delay = iter_num - last_event
 print("Convergence Delay: " + str(convergence_delay))
 
 #append final output
-split_horizon.write('Convergence Delay: ' + str(convergence_delay))
+if mode == '0':
+    split.write('Round Number: ' + str(iter_num - 1) + '\n')
+    split.write(print_iter_table(routers) + '\n')
+split.write('Convergence Delay: ' + str(convergence_delay))
 
 print('####### POISON REVERSE OUTPUT #######')
 #parse input
@@ -269,7 +266,6 @@ while (not converged or len(changes) > 0):
         last_event = changes[0].time_step
         del changes[0]
         converged = False
-        time.sleep(1)
 
     #temporary storage for the iteration
     temp_tables = {r.name: copy.deepcopy(r.table) for r in routers}
@@ -284,17 +280,15 @@ while (not converged or len(changes) > 0):
                     new_cost = table_of_router[advert].cost + table_of_adj[advert].cost
                     router.table[advert].total_hops = 1 + table_of_adj[advert].total_hops
                     router.table[advert].cost = new_cost
-                elif table_of_adj[advert].cost == -1:
-                    router.table[advert].total_hops = -1
-                    router.table[advert].cost = -1
-                    router.table[advert].next_hop = -1
+
+    #temporary storage for the iteration
+    temp_tables = {r.name: copy.deepcopy(r.table) for r in routers}
 
     for router in routers:
         table_of_router = temp_tables[router.name]
         for adj in router.adjacencies:
             table_of_adj = temp_tables[adj[0].name]
             #get advertisements from adjacencies
-
             for advert in table_of_adj:
                 if table_of_router[adj[0].name].cost != -1 and table_of_adj[advert].cost != -1:
                     if table_of_adj[advert].next_hop != router.name:
@@ -305,8 +299,11 @@ while (not converged or len(changes) > 0):
                             router.table[advert].total_hops = 1 + table_of_adj[advert].total_hops
 
             #see if direct adjacency is better (initial setup or based on a change)
-            if table_of_router[adj[0].name].cost == -1 or table_of_router[adj[0].name].cost > adj[1]:
+            if router.table[adj[0].name].cost == -1 or router.table[adj[0].name].cost > adj[1]:
                 router.table[adj[0].name] = Advertisement(adj[0].name, adj[1], 1)
+                for r in routers:
+                    if r.name == adj[0].name:
+                        r.table[router.name] = Advertisement(router.name, adj[1], 1)
 
     table = print_iter_table(routers)
     if table == last_table:
@@ -323,12 +320,13 @@ while (not converged or len(changes) > 0):
         pass
 
     iter_num += 1
-if mode == '0':
-    poison_reverse.write('Round Number: ' + str(iter_num - 1) + '\n')
-    poison_reverse.write(print_iter_table(routers) + '\n')
 if convergence_delay is None:
     convergence_delay = iter_num - last_event
 print("Convergence Delay: " + str(convergence_delay))
 
 #append final output
+if mode == '0':
+    poison_reverse.write('Round Number: ' + str(iter_num - 1) + '\n')
+    poison_reverse.write(print_iter_table(routers) + '\n')
 poison_reverse.write('Convergence Delay: ' + str(convergence_delay))
+
