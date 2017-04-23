@@ -138,6 +138,14 @@ class Change():
             del router_b.adjacencies[router_b.adjacencies.index((router_a, a_cost))]
             router_a.adjacencies.append((router_b, self.cost))
             router_b.adjacencies.append((router_a, self.cost))
+            for advert in router_a.table:
+                if router_a.table[advert].next_hop == router_b.name:
+                    new_cost = self.cost + router_b.table[advert].cost
+                    router_a.table[advert].cost = new_cost
+            for advert in router_b.table:
+                if router_b.table[advert].next_hop == router_a.name:
+                    new_cost = self.cost + router_a.table[advert].cost
+                    router_b.table[advert].cost = new_cost
 
         #update in the routing tables
         if router_a.table[router_b.name].cost > self.cost:
