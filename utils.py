@@ -46,7 +46,7 @@ def print_iter_table(routers):
     for r in routers:
         table += str(r.name) + ' | '
         for advert in r.table:
-            table += str(r.table[advert]) + ' |'
+            table += str(r.table[advert]) + ' | '
         table += '\n'
     print(table)
 
@@ -62,7 +62,7 @@ class Router():
         table = {}
         for i in range(total_routers):
             if i+1 is not int(self.name):
-                table[str(i+1)] = Advertisement(0, -1, -1)
+                table[str(i+1)] = Advertisement(-1, -1, -1)
             else:
                 table[str(i+1)] = Advertisement(self.name, 0, 0)
         return table
@@ -91,7 +91,7 @@ class Change():
         self.time_step = time_step
         self.router_a = router_a
         self.router_b = router_b
-        self.cost = cost
+        self.cost = int(cost)
 
     def apply_change(self, routers):
         #update routers and adjacencies
@@ -99,13 +99,22 @@ class Change():
         router_b = [r for r in routers if r == self.router_b][0]
 
         #deleting edge, get rid of adjacencies
-        if int(self.cost) == -1:
+        if self.cost == -1:
             print("DELETING EDGE")
             b_cost = dict(router_a.adjacencies)[router_b]
             del router_a.adjacencies[router_a.adjacencies.index((router_b, b_cost))]
             a_cost = dict(router_b.adjacencies)[router_a]
             del router_b.adjacencies[router_b.adjacencies.index((router_a, a_cost))]
-            self.cost = -1
+            if router_a.table[router_b.name].next_hop == router_b.name:
+                router_a.table[router_b.name].next_hop = -1
+                router_a.table[router_b.name].cost = -1
+                router_a.table[router_b.name].total_hops = -1
+            if router_b.table[router_a.name].next_hop == router_a.name:
+                router_b.table[router_a.name].next_hop = -1
+                router_b.table[router_a.name].cost = -1
+                router_b.table[router_a.name].total_hops = -1
+            return
+
         #new edge
         elif self.router_b not in dict(router_a.adjacencies):
             print("ADDING NEW EDGE")

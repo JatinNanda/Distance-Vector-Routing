@@ -26,25 +26,32 @@ changes = input_to_changes(file_changes, num_routers)
 changes.sort(key = lambda c: c.time_step)
 
 #main loop
-iter_num = 0
+iter_num = 1
 converged = False
 count_to_infinity = False
+temp_tables = None
 
 
-print("INITIAL TABLE")
-print_iter_table(routers)
 
 while (not converged or len(changes) > 0):
+    print("ITERATION " + str(iter_num))
+    time.sleep(1) #delay for readability
+
+    #First check for count to infinity
     for r in routers:
-        if int(max(r.adjacencies, key = lambda adj: adj[1])[1]) >= 100:
-            print("Count to infinity instability detected. Stopping iterations.")
-            count_to_infinity = True
-            break
+        for advert in r.table:
+            if r.table[advert].total_hops >= 100:
+                print("Count to infinity instability detected. Stopping iterations.")
+                count_to_infinity = True
+                break
     if count_to_infinity:
         break
 
-    print("ITERATION " + str(iter_num))
-    time.sleep(1) #delay for readability
+    #check if no updates were made
+    tables = {r.name: r.table for r in routers}
+    if tables == temp_tables:
+        print("CONVERGED")
+        converged = True
 
     #apply changes when applicable
     while len(changes) > 0 and iter_num == int(changes[0].time_step):
@@ -53,19 +60,27 @@ while (not converged or len(changes) > 0):
         del changes[0]
         converged = False
 
-    #initialize tables with adjacencies
-    for router in routers:
-        for adj in router.adjacencies:
-            router.table[adj[0].name] = Advertisement(adj[0].name, adj[1], 1)
-
-    #temp copy of every table in routers
+    #temporary storage for the iteration
     temp_tables = {r.name: copy.copy(r.table) for r in routers}
+
+    #check tables with adjacencies
     for router in routers:
         for adj in router.adjacencies:
             table_to_use = temp_tables[adj[0].name]
-            for advert in table_to_use:
-                if advert in router.table:
-                    new_cost = router.table[adj[0].name].cost + table_to_use[advert].cost
+            if table_to_use[router.name].cost == -1 or table_to_use[router.name].cost > adj[1]:
+                router.table[adj[0].name] = Advertisement(adj[0].name, adj[1], 1)
+    print_iter_table(routers)
+
+    #temp copy of every table in routers
+    if iter_num is not -1:
+        for router in routers:
+            for adj in router.adjacencies:
+                table_to_use = temp_tables[adj[0].name]
+                for advert in table_to_use:
+                    if table_to_use[advert].cost == -1:
+                        new_cost = router.table[adj[0].name].cost
+                    else:
+                        new_cost = router.table[adj[0].name].cost + table_to_use[advert].cost
                     if router.table[advert].cost == -1 or new_cost < router.table[advert].cost:
                         router.table[advert].cost = new_cost
                         router.table[advert].next_hop = adj[0].name
@@ -74,14 +89,8 @@ while (not converged or len(changes) > 0):
                         else:
                             router.table[advert].total_hops = 1 + table_to_use[advert].total_hops
 
-    print("UPDATED TABLE")
     print_iter_table(routers)
 
-    #check if no updates were made
-    tables = {r.name: r.table for r in routers}
-    if tables == temp_tables:
-        print("CONVERGED")
-        converged = True
 
     if (mode == '1'):
         #append output per iteration
